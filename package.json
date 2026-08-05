@@ -1,0 +1,16 @@
+{
+  "name": "dentalworkforce-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dental Care Workforce Skill & Capacity Intelligence Platform",
+  "scripts": {
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "start": "node server/index.js",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
