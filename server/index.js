@@ -9,6 +9,7 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import auditRoutes from './routes/auditRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 
+dotenv.config();
 dotenv.config({ path: '../.env' });
 
 const app = express();
@@ -21,14 +22,14 @@ app.use(cors({
 
 app.use(express.json());
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/workers', workerRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/approvals', approvalRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/audit', auditRoutes);
-app.use('/api/reports', reportRoutes);
+// Root & Health Status Endpoints
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    message: 'DentalWorkforce AI Backend API is Live & Running!',
+    timestamp: new Date().toISOString()
+  });
+});
 
 app.get('/health', (req, res) => {
   res.json({
@@ -37,6 +38,23 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    system: 'Dental Care Workforce Skill & Capacity Intelligence Platform',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/workers', workerRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/approvals', approvalRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/audit', auditRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
