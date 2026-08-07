@@ -62,7 +62,7 @@ export const matchCandidateForProcedure = async ({ appointmentId, procedureName,
           'Authorization': `Bearer ${GROK_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'grok-beta',
+          model: process.env.GROK_MODEL || 'grok-beta',
           messages: [
             { role: 'system', content: GROK_SYSTEM_PROMPT },
             {
@@ -242,7 +242,7 @@ Answer user questions accurately, professionally, and concisely using Markdown f
           Authorization: `Bearer ${currentApiKey}`,
         },
         body: JSON.stringify({
-          model: 'grok-beta',
+          model: process.env.GROK_MODEL || 'grok-beta',
           messages: [
             { role: 'system', content: systemPrompt },
             ...formattedHistory,
