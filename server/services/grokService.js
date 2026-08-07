@@ -207,3 +207,86 @@ export const recommendLearningPathway = async ({ workerId }) => {
     expectedImpactOnCapacity: '+15% procedure throughput for clinic chair allocations.',
   };
 };
+
+export const chatWithGrok = async ({ message, history = [], userContext = {} }) => {
+  const currentApiKey = process.env.GROK_API_KEY || GROK_API_KEY;
+  const currentApiUrl = process.env.GROK_API_URL || GROK_API_URL;
+
+  const totalWorkers = mockDb.worker_profiles.length;
+  const totalClinics = mockDb.clinics.length;
+  const highBurnoutWorkers = mockDb.worker_profiles.filter(
+    (w) => w.burnout_risk_level === 'High' || w.burnout_risk_level === 'Critical'
+  ).length;
+
+  const systemPrompt = `You are Grok Dental AI, an intelligent, helpful assistant for the Dental Workforce & Capacity Intelligence Platform.
+User Context: ${userContext.userName || 'User'} (Role: ${userContext.userRole || 'Staff'}).
+System Telemetry Snapshot:
+- Total Clinics: ${totalClinics}
+- Active Practitioners: ${totalWorkers}
+- High/Critical Burnout Risk Practitioners: ${highBurnoutWorkers}
+- Supported Key Procedures: Molar Root Canal Therapy (RCT), Dental Implants & Grafting, Clear Aligner Orthodontics, Scaling & Deep Prophylaxis, Pediatric Pulpotomy, Laser Periodontal Surgery, IV Sedation.
+
+Answer user questions accurately, professionally, and concisely using Markdown formatting (bullet points, bold text). Provide actionable clinical workforce advice on scheduling, burnout mitigation, chair capacity forecasting, and skills matrix.`;
+
+  if (currentApiKey && currentApiKey !== 'mock-grok-key') {
+    try {
+      const formattedHistory = history.map((h) => ({
+        role: h.sender === 'user' ? 'user' : 'assistant',
+        content: h.text,
+      }));
+
+      const response = await fetch(currentApiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${currentApiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'grok-beta',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...formattedHistory,
+            { role: 'user', content: message },
+          ],
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const reply = data.choices?.[0]?.message?.content;
+        if (reply) {
+          return {
+            reply,
+            source: 'Grok Live API (x.ai)',
+            timestamp: new Date().toISOString(),
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('Grok Chat API call notice, using intelligent fallback assistant:', err.message);
+    }
+  }
+
+  // Intelligent Fallback Assistant
+  const msgLower = message.toLowerCase();
+  let reply = '';
+
+  if (msgLower.includes('burnout') || msgLower.includes('overworked')) {
+    reply = `**Burnout Risk Analysis Summary:**\n\nCurrently, **${highBurnoutWorkers} practitioner(s)** are flagged with High/Critical burnout risk indices across the network.\n\n**Recommended Actions:**\n- **Dr. Carlos Alvarez** (Burnout Score 79/100): Schedule a mandatory off-duty rest period and reassign non-critical surgical shifts.\n- **Shift Balancing**: Cap consecutive weekly hours at 40 hours for high-complexity surgical teams.`;
+  } else if (msgLower.includes('root canal') || msgLower.includes('rct') || msgLower.includes('match') || msgLower.includes('procedure')) {
+    reply = `**Procedure Matching Recommendation:**\n\nFor **Complex Molar Root Canal Therapy (RCT)**, **Dr. Elena Rostova** is the optimal candidate.\n\n- **Proficiency**: Level 5 (Expert)\n- **Certification**: Board Certified Endodontist (Active)\n- **Burnout Score**: 24/100 (Low Risk)\n- **Chair Status**: Chair 3 available with 0 scheduling conflicts.`;
+  } else if (msgLower.includes('capacity') || msgLower.includes('forecast') || msgLower.includes('demand') || msgLower.includes('chair')) {
+    reply = `**Network Capacity & Demand Forecast:**\n\n- **Average Chair Utilization**: 86.4% across ${totalClinics} network clinics.\n- **Peak Demand Day**: Projecting a shortage gap of 14 hours on Day 7 at Metro Orthodontics.\n\n**AI Recommendation**: Reallocate 2 hygienists from Downtown Dental to Metro Ortho to eliminate bottleneck.`;
+  } else if (msgLower.includes('skill') || msgLower.includes('matrix') || msgLower.includes('training') || msgLower.includes('learn')) {
+    reply = `**Skill Matrix & Upskilling Insights:**\n\n- **Top Competency Gap**: Nitrous Monitoring and Laser Surgery have fewer than 2 qualified practitioners.\n- **Upskilling Path**: Recommended masterclass for **Dr. Elena Rostova** in Laser Hygiene Therapy to elevate clinic throughput by 15%.`;
+  } else {
+    reply = `Hello **${userContext.userName || 'Practitioner'}**! I am **Grok AI**, your Dental Workforce Intelligence assistant.\n\nI can help you with:\n- **Procedure Candidate Matching** (finding optimal specialists)\n- **Burnout & Workload Auditing** (identifying overworked staff)\n- **Capacity Projections** (7/14/30-day chair demand forecasting)\n- **Skill Matrix & Upskilling** (competency gaps across clinics)\n\nWhat would you like to explore today?`;
+  }
+
+  return {
+    reply,
+    source: 'Grok AI Assistant',
+    timestamp: new Date().toISOString(),
+  };
+};
+

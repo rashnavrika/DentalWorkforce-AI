@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { Navbar } from './components/common/Navbar';
 import { Sidebar } from './components/common/Sidebar';
+import { Chatbot } from './components/common/Chatbot';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
 
 import { LoginPage } from './pages/LoginPage';
@@ -125,6 +126,7 @@ const ProtectedLayout = () => {
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
+        <Chatbot />
       </div>
     </div>
   );

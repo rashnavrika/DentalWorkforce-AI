@@ -10,13 +10,47 @@ import {
   matchCandidateForProcedure,
   forecastCapacityAndDemand,
   recommendLearningPathway,
+  chatWithGrok,
 } from '../services/grokService.js';
 import { recordAuditLog } from '../services/auditService.js';
 
 const router = express.Router();
 
+// POST /api/ai/chat — Interactive Grok AI Chatbot query
+router.post('/chat', authenticateToken, async (req, res) => {
+  const { message, history } = req.body;
+
+  if (!message || typeof message !== 'string' || !message.trim()) {
+    return res.status(400).json({ error: 'Message content is required.' });
+  }
+
+  try {
+    const chatResponse = await chatWithGrok({
+      message: message.trim(),
+      history: Array.isArray(history) ? history : [],
+      userContext: {
+        userName: req.user?.full_name,
+        userRole: req.user?.role,
+      },
+    });
+
+    await recordAuditLog({
+      userId: req.user.id,
+      actionType: 'AI_CHATBOT_INTERACTION',
+      entityAffected: 'AI_CHATBOT',
+      details: { promptSnippet: message.substring(0, 100), source: chatResponse.source },
+    });
+
+    res.json(chatResponse);
+  } catch (err) {
+    console.error('AI chatbot error:', err);
+    res.status(500).json({ error: 'Failed to process AI chat message.' });
+  }
+});
+
 // POST /api/ai/match-candidate — Trigger Grok AI candidate evaluation
 router.post('/match-candidate', authenticateToken, validateRequest(aiMatchCandidateSchema), async (req, res) => {
+
   const { appointment_id, procedure_name, required_skill_id, clinic_id } = req.body;
 
   try {
